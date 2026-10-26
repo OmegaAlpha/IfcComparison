@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,9 +8,8 @@ namespace IfcComparison.Enumerations
 {
     public enum ComparisonEnumeration
     {
-        Contains = 1,
-        Exact = 2,
-        Identifier = 3,
-
+        Identifier = 1,
+        Contains = 2,
+        Exact = 3,
     }
 }

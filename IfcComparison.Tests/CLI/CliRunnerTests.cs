@@ -235,6 +235,10 @@ namespace IfcComparison.Tests.CLI
         [InlineData("Contains")]
         [InlineData("StartsWith")]
         [InlineData("EndsWith")]
+        [InlineData("Identifier")]
+        [InlineData("GlobalId")]
+        [InlineData("Guid")]
+        [InlineData("Exact")]
         public void ValidComparisonMethods_AreAccepted(string method)
         {
             // Arrange
@@ -274,6 +278,44 @@ namespace IfcComparison.Tests.CLI
             Assert.Contains("SOS-KON_Armering", entity.IfcPropertySets);
             Assert.Contains("SOS-KON_Felles", entity.IfcPropertySets);
             Assert.Contains("MERKNADER", entity.IfcPropertySets);
+        }
+
+        [Fact]
+        public void IfcEntity_DefaultsToIdentifierComparisonMethod()
+        {
+            var entity = new IfcEntity();
+            Assert.Equal("Identifier", entity.ComparisonMethod);
+            Assert.Equal(string.Empty, entity.ComparisonOperator);
+        }
+
+        [Fact]
+        public void ValidJson_WithIdentifierAndNoOperator_CanBeDeserialized()
+        {
+            // Arrange
+            var settingsPath = Path.Combine(_testDataFolder, "valid_identifier.json");
+            var json = @"{
+                ""FilePathOldIFC"": ""C:\\test\\old.ifc"",
+                ""FilePathNewIFC"": ""C:\\test\\new.ifc"",
+                ""FilePathIFCToQA"": ""C:\\test\\output.ifc"",
+                ""DataGridContentIFCEntities"": [
+                    {
+                        ""PSetName"": ""QA_REBAR"",
+                        ""Entity"": ""IIfcReinforcingBar"",
+                        ""IfcPropertySets"": [""MERKNADER""],
+                        ""ComparisonMethod"": ""Identifier""
+                    }
+                ]
+            }";
+            File.WriteAllText(settingsPath, json);
+
+            // Act
+            var settings = JsonSerializer.Deserialize<UserSettings>(File.ReadAllText(settingsPath));
+
+            // Assert
+            Assert.NotNull(settings);
+            Assert.Single(settings.DataGridContentIFCEntities);
+            Assert.Equal("Identifier", settings.DataGridContentIFCEntities[0].ComparisonMethod);
+            Assert.Equal(string.Empty, settings.DataGridContentIFCEntities[0].ComparisonOperator);
         }
     }
 }

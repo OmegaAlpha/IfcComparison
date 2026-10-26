@@ -1,10 +1,10 @@
-﻿using IfcComparison.Models;
+using IfcComparison.Models;
 using IfcComparison.ViewModels;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Controls;
-using WpfUtilities.Utils;
+using IfcComparison.Utils;
 
 namespace IfcComparison
 {

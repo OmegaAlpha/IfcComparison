@@ -1,3 +1,4 @@
+using IfcComparison.Enumerations;
 using IfcComparison.Logging;
 using IfcComparison.Models;
 using IfcComparison.ViewModels;
@@ -92,7 +93,7 @@ namespace IfcComparison.CLI
 
                     await comparer.CompareAllRevisions();
 
-                    Console.WriteLine("\n✓ IFC Comparison completed successfully!");
+                    Console.WriteLine("\nâœ“ IFC Comparison completed successfully!");
                     Console.WriteLine($"Output written to: {settings.FilePathIFCToQA}");
                     _logger.LogInformation("CLI comparison completed successfully");
 
@@ -220,21 +221,29 @@ namespace IfcComparison.CLI
                     result.IsValid = false;
                 }
 
-                if (string.IsNullOrWhiteSpace(entity.ComparisonOperator))
+                if (string.IsNullOrWhiteSpace(entity.ComparisonMethod))
                 {
-                    result.Errors.Add($"{prefix}: ComparisonOperator is required");
+                    entity.ComparisonMethod = nameof(ComparisonEnumeration.Identifier);
+                }
+                else if (NormalizeComparisonMethod(entity.ComparisonMethod) is string normalizedMethod)
+                {
+                    entity.ComparisonMethod = normalizedMethod;
+                }
+                else
+                {
+                    result.Errors.Add($"{prefix}: Invalid ComparisonMethod '{entity.ComparisonMethod}'. Valid values are: Identifier (GlobalId/Guid), Contains, Exact (Equals)");
                     result.IsValid = false;
                 }
 
-                if (string.IsNullOrWhiteSpace(entity.ComparisonMethod))
+                bool isIdentifierMethod = string.Equals(entity.ComparisonMethod, nameof(ComparisonEnumeration.Identifier), StringComparison.OrdinalIgnoreCase);
+                if (!isIdentifierMethod && string.IsNullOrWhiteSpace(entity.ComparisonOperator))
                 {
-                    result.Errors.Add($"{prefix}: ComparisonMethod is required");
+                    result.Errors.Add($"{prefix}: ComparisonOperator is required when ComparisonMethod is '{entity.ComparisonMethod}'");
                     result.IsValid = false;
                 }
-                else if (!IsValidComparisonMethod(entity.ComparisonMethod))
+                else if (isIdentifierMethod && entity.ComparisonOperator == null)
                 {
-                    result.Errors.Add($"{prefix}: Invalid ComparisonMethod '{entity.ComparisonMethod}'. Valid values are: Equals, Contains, StartsWith, EndsWith");
-                    result.IsValid = false;
+                    entity.ComparisonOperator = string.Empty;
                 }
             }
 
@@ -243,8 +252,40 @@ namespace IfcComparison.CLI
 
         private bool IsValidComparisonMethod(string method)
         {
-            var validMethods = new[] { "Equals", "Contains", "StartsWith", "EndsWith" };
-            return validMethods.Contains(method, StringComparer.OrdinalIgnoreCase);
+            return NormalizeComparisonMethod(method) != null;
+        }
+
+        private static string NormalizeComparisonMethod(string method)
+        {
+            if (string.IsNullOrWhiteSpace(method))
+                return nameof(ComparisonEnumeration.Identifier);
+
+            if (string.Equals(method, "Identifier", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(method, "GlobalId", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(method, "Guid", StringComparison.OrdinalIgnoreCase))
+            {
+                return nameof(ComparisonEnumeration.Identifier);
+            }
+
+            if (string.Equals(method, "Exact", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(method, "Equals", StringComparison.OrdinalIgnoreCase))
+            {
+                return nameof(ComparisonEnumeration.Exact);
+            }
+
+            if (string.Equals(method, "Contains", StringComparison.OrdinalIgnoreCase))
+            {
+                return nameof(ComparisonEnumeration.Contains);
+            }
+
+            // Backwards compatibility with earlier CLI docs
+            if (string.Equals(method, "StartsWith", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(method, "EndsWith", StringComparison.OrdinalIgnoreCase))
+            {
+                return nameof(ComparisonEnumeration.Contains);
+            }
+
+            return null;
         }
 
         private async Task<IfcStore> OpenIFCModelAsync(string fileName, string description)
@@ -265,7 +306,7 @@ namespace IfcComparison.CLI
                 return IfcStore.Open(fileName, editor, accessMode: Xbim.IO.XbimDBAccess.Read);
             });
 
-            Console.WriteLine($"  ✓ {description} loaded successfully");
+            Console.WriteLine($"  âœ“ {description} loaded successfully");
             _logger.LogInformation("{Description} model loaded: {FileName}", description, fileName);
 
             return model;

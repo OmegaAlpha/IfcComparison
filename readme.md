@@ -1,4 +1,4 @@
-﻿# IfcComparison
+# IfcComparison
 
 ## Sub-project of InfraTools
 [InfraTools](https://github.com/Infrastructure-Consultancies-in-Norway/InfraTools/)
@@ -85,12 +85,11 @@ Each entity in the array must have:
 - **PSetName**: Name of the property set to create in the output
 - **Entity**: IFC entity type (e.g., "IIfcReinforcingBar", "IIfcBeam")
 - **IfcPropertySets**: Array of property set names to check
-- **ComparisonOperator**: The value to search for
-- **ComparisonMethod**: Comparison method - valid values:
-  - `Equals` - Exact match
-  - `Contains` - Partial match
-  - `StartsWith` - Starts with value
-  - `EndsWith` - Ends with value
+- **ComparisonMethod**: Comparison method (default: Identifier) - valid values:
+  - Identifier (or GlobalId / Guid) - **Recommended default**: Match elements using their IFC GUID (GlobalId). Fastest, zero-configuration, and standard.
+  - Contains - Match elements by searching property names for the string specified in ComparisonOperator.
+  - Exact (or Equals) - Match elements where a property name matches ComparisonOperator exactly.
+- **ComparisonOperator**: The property name/keyword to search for. **Only required when ComparisonMethod is Contains or Exact**; optional and unused when ComparisonMethod is Identifier (GUID).
 
 ### CLI Output
 

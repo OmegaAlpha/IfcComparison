@@ -1,9 +1,9 @@
-﻿
+
 using IfcComparison.Enumerations;
 using IfcComparison.Logging;
 using IfcComparison.ViewModels;
 using System.Threading.Tasks;
-using WpfUtilities.Utils;
+using IfcComparison.Utils;
 using Xbim.Ifc;
 using Xunit;
 

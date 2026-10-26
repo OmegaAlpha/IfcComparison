@@ -1,4 +1,4 @@
-﻿using IfcComparison.Enumerations;
+using IfcComparison.Enumerations;
 using IfcComparison.Models;
 using System;
 using System.Collections.Generic;
@@ -10,7 +10,6 @@ using IfcComparison.Utils;
 
 namespace IfcComparison.ViewModels
 {
-
     public class IfcEntity
     {
         /// <summary>
@@ -24,9 +23,34 @@ namespace IfcComparison.ViewModels
         /// </summary>
         public string Entity { get; set; }
 
-        public List<string> IfcPropertySets { get; set; }
-        public string ComparisonOperator { get; set; }
-        public string ComparisonMethod { get; set; }
+        public List<string> IfcPropertySets { get; set; } = new List<string>();
+        public string ComparisonOperator { get; set; } = string.Empty;
+        public string ComparisonMethod { get; set; } = nameof(ComparisonEnumeration.Identifier);
+
+        /// <summary>
+        /// Whether to evaluate 3D shape, volume, centroid displacement, and bounding box.
+        /// </summary>
+        public bool CompareGeometry { get; set; } = false;
+
+        /// <summary>
+        /// Volume difference tolerance in cubic meters (default 0.001 = 1 liter).
+        /// </summary>
+        public double VolumeToleranceM3 { get; set; } = 0.001;
+
+        /// <summary>
+        /// Volume percentage change tolerance (default 1.0 = 1%). When greater than 0, relative volume changes exceeding this threshold flag VolumeChanged.
+        /// </summary>
+        public double VolumePercentTolerance { get; set; } = 1.0;
+
+        /// <summary>
+        /// Position / centroid displacement tolerance in millimeters (default 1.0 mm).
+        /// </summary>
+        public double PositionToleranceMm { get; set; } = 1.0;
+
+        /// <summary>
+        /// Whether to generate visual 3D ghost overlays (deleted in red, inserted in green, modified new in yellow, modified old in purple).
+        /// </summary>
+        public bool EnableGhostOverlays { get; set; } = true;
 
         // ----------------------------------------------------------------
         // Helpers -- not serialized, computed on demand
@@ -97,27 +121,14 @@ namespace IfcComparison.ViewModels
                         Entity = entityName,
                         IfcPropertySets = IfcPropertySets,
                         ComparisonOperator = ComparisonOperator,
-                        ComparisonMethod = ComparisonMethod
+                        ComparisonMethod = ComparisonMethod,
+                        CompareGeometry = CompareGeometry,
+                        VolumeToleranceM3 = VolumeToleranceM3,
+                        PositionToleranceMm = PositionToleranceMm,
+                        EnableGhostOverlays = EnableGhostOverlays
                     };
                 }
             }
         }
     }
-
-
-
-
-    //public class IfcEntities
-    //{
-    //    public IfcEntity<object> IfcEntity { get; set; } = new IfcEntity<object>();
-    //    public string IfcPropertySet { get; set; }
-    //    public string ComparisonOperator { get; set; }
-
-    //}
-
-    //public class IfcEntity<T>
-    //{ 
-    //    public T Entity { get; set; }
-    //}
-
 }

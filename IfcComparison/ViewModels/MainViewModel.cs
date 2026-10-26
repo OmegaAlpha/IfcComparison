@@ -1,4 +1,4 @@
-﻿using IfcComparison.Enumerations;
+using IfcComparison.Enumerations;
 using IfcComparison.Logging;
 using IfcComparison.Models;
 using Microsoft.Win32;
@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using WpfUtilities.Utils;
+using IfcComparison.Utils;
 using Xbim.Ifc;
 using Xbim.IO.Xml.BsConf;
 
@@ -162,14 +162,17 @@ namespace IfcComparison.ViewModels
             // Ensure logger is initialized
             LoggerInitializer.EnsureInitialized();
 
-            // Set up the logging service to append to OutputConsole
+            // Set up the logging service to append to OutputConsole asynchronously
             LoggingService.SetOutputConsoleAction(message =>
             {
-                // Use Dispatcher to ensure UI thread safety
-                Application.Current.Dispatcher.Invoke(() =>
+                var dispatcher = Application.Current?.Dispatcher;
+                if (dispatcher != null && !dispatcher.HasShutdownStarted)
                 {
-                    OutputConsole += message + Environment.NewLine;
-                });
+                    dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        OutputConsole += message + Environment.NewLine;
+                    }), System.Windows.Threading.DispatcherPriority.Background);
+                }
             });
 
             LoadUserSettings(@"IfcComparisonSettings\\DefaultSettings.json");

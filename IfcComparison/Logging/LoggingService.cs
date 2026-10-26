@@ -31,8 +31,7 @@ namespace IfcComparison.Logging
 
             if (_loggerFactory == null)
             {
-                throw new InvalidOperationException(
-                    "Logger factory has not been initialized. Call Initialize method first.");
+                _loggerFactory = LoggerFactory.Create(builder => { });
             }
 
             // If logger factory already exists, add the UI console provider
@@ -49,8 +48,7 @@ namespace IfcComparison.Logging
         {
             if (_loggerFactory == null)
             {
-                throw new InvalidOperationException(
-                    "Logger factory has not been initialized. Call Initialize method first.");
+                _loggerFactory = LoggerFactory.Create(builder => { });
             }
             
             return _loggerFactory.CreateLogger<T>();
@@ -60,8 +58,7 @@ namespace IfcComparison.Logging
         {
             if (_loggerFactory == null)
             {
-                throw new InvalidOperationException(
-                    "Logger factory has not been initialized. Call Initialize method first.");
+                _loggerFactory = LoggerFactory.Create(builder => { });
             }
             
             return _loggerFactory.CreateLogger(categoryName);

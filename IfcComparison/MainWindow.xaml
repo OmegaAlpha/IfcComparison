@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="IfcComparison.MainWindow"
+<UserControl x:Class="IfcComparison.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -79,8 +79,16 @@
                 <DataGridTextColumn MinWidth="100" Header="IFC Property Set Name" 
                                     Binding="{Binding IfcPropertySets, Converter={StaticResource CollectionToStringConverter}, 
                                     UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"/>
-                <DataGridTextColumn MinWidth="100" Header="Comparison Operator" Binding="{Binding ComparisonOperator}"/>
-                <DataGridComboBoxColumn MinWidth="100" Header="Comparion Method" ItemsSource="{Binding DataContext.ComparisonMethodCol, Source={x:Reference ProxyElement}}" SelectedItemBinding="{Binding ComparisonMethod , Mode=TwoWay}" />
+                <DataGridTextColumn MinWidth="100" Header="Comparison Operator" Binding="{Binding ComparisonOperator}">
+                    <DataGridTextColumn.CellStyle>
+                        <Style TargetType="DataGridCell">
+                            <Setter Property="ToolTip" Value="Required for Contains/Exact. Optional (unused) when Comparison Method is Identifier (GUID)." />
+                        </Style>
+                    </DataGridTextColumn.CellStyle>
+                </DataGridTextColumn>
+                <DataGridComboBoxColumn MinWidth="100" Header="Comparison Method" ItemsSource="{Binding DataContext.ComparisonMethodCol, Source={x:Reference ProxyElement}}" SelectedItemBinding="{Binding ComparisonMethod, Mode=TwoWay}" />
+                <DataGridCheckBoxColumn MinWidth="80" Header="3D Geom" Binding="{Binding CompareGeometry, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                <DataGridCheckBoxColumn MinWidth="80" Header="Ghosts" Binding="{Binding EnableGhostOverlays, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
             </DataGrid.Columns>
             <!--<i:Interaction.Triggers>
                         <i:EventTrigger EventName="BeinningEdit">

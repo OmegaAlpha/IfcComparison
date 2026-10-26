@@ -55,14 +55,18 @@ namespace IfcComparison.Models
                 var targetType = IfcTools.GetInterfaceType(Entity?.Entity);
                 var comparisonOperator = Entity?.ComparisonOperator ?? string.Empty;
                 var comparisonMethod = Entity?.ComparisonMethod ?? string.Empty;
-                bool usePropertyComparison = comparisonMethod != nameof(IfcComparison.Enumerations.ComparisonEnumeration.Identifier);
+                bool isIdentifier = string.IsNullOrEmpty(comparisonMethod) ||
+                                    string.Equals(comparisonMethod, nameof(IfcComparison.Enumerations.ComparisonEnumeration.Identifier), StringComparison.OrdinalIgnoreCase) ||
+                                    string.Equals(comparisonMethod, "GlobalId", StringComparison.OrdinalIgnoreCase) ||
+                                    string.Equals(comparisonMethod, "Guid", StringComparison.OrdinalIgnoreCase);
+                bool usePropertyComparison = !isIdentifier;
 
                 _logger.LogDebug("Looking for property sets: {PSets}, Target type: {Type}",
                     string.Join(", ", requiredPSetNames), targetType?.Name ?? "null");
 
                 // ----------------------------------------------------------------
-                // PASS 1: Build objectAllPSets — all PSets per entity-typed object.
-                //         (No filter on PSet name — we want every PSet on the object.)
+                // PASS 1: Build objectAllPSets â€” all PSets per entity-typed object.
+                //         (No filter on PSet name â€” we want every PSet on the object.)
                 // ----------------------------------------------------------------
                 var objectAllPSets = new Dictionary<IIfcObject, List<IIfcPropertySet>>();
 
@@ -100,7 +104,7 @@ namespace IfcComparison.Models
                 // ----------------------------------------------------------------
                 // PASS 2: For each object, search ALL its PSets for the
                 //         comparisonOperator property and cache the result.
-                //         Warn (→ file log + UI console) when not found.
+                //         Warn (â†’ file log + UI console) when not found.
                 // ----------------------------------------------------------------
                 var objectComparisonIdCache = new Dictionary<IIfcObject, string>();
 

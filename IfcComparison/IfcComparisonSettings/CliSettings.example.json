@@ -7,22 +7,37 @@
       "PSetName": "QA_REBAR",
       "Entity": "IIfcReinforcingBar",
       "IfcPropertySets": [ "MERKNADER" ],
-      "ComparisonOperator": "K200",
-      "ComparisonMethod": "Contains"
+      "ComparisonOperator": "",
+      "ComparisonMethod": "Identifier",
+      "CompareGeometry": false,
+      "VolumeToleranceM3": 0.001,
+      "VolumePercentTolerance": 1.0,
+      "PositionToleranceMm": 1.0,
+      "EnableGhostOverlays": true
     },
     {
       "PSetName": "QA_PROXY",
       "Entity": "IIfcBuildingElementProxy",
       "IfcPropertySets": [ "MERKNADER" ],
-      "ComparisonOperator": "K001",
-      "ComparisonMethod": "Contains"
+      "ComparisonOperator": "",
+      "ComparisonMethod": "Identifier",
+      "CompareGeometry": true,
+      "VolumeToleranceM3": 0.001,
+      "VolumePercentTolerance": 1.0,
+      "PositionToleranceMm": 1.0,
+      "EnableGhostOverlays": true
     },
     {
       "PSetName": "QA_BEAM",
       "Entity": "IIfcBeam",
       "IfcPropertySets": [ "MERKNADER" ],
-      "ComparisonOperator": "K001",
-      "ComparisonMethod": "Contains"
+      "ComparisonOperator": "",
+      "ComparisonMethod": "Identifier",
+      "CompareGeometry": true,
+      "VolumeToleranceM3": 0.001,
+      "VolumePercentTolerance": 1.0,
+      "PositionToleranceMm": 1.0,
+      "EnableGhostOverlays": true
     }
   ]
 }
