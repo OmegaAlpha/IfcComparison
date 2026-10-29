@@ -233,6 +233,42 @@ namespace IfcComparison.Models
                     }
                 }
 
+                // Collect all objects accounted for by matching PSets
+                var accountedObjects = new HashSet<IIfcObject>();
+                foreach (var dict in psetToObjects.Values)
+                {
+                    foreach (var obj in dict.Values)
+                    {
+                        accountedObjects.Add(obj);
+                    }
+                }
+
+                // Query all instances of targetType to catch objects without required PSets
+                var allModelObjects = IfcTools.GetModelInstancesByInvokeReflection<IIfcObject>(IfcComparerModel, targetType ?? typeof(IIfcObject));
+                var remainingObjects = allModelObjects
+                    .Where(o => o != null && !accountedObjects.Contains(o))
+                    .ToDictionary(o => o.GlobalId, o => o);
+
+                if (remainingObjects.Count > 0)
+                {
+                    var subsetCache = new Dictionary<IIfcObject, string>();
+                    foreach (var obj in remainingObjects.Values)
+                    {
+                        if (objectComparisonIdCache.TryGetValue(obj, out var cachedId))
+                            subsetCache[obj] = cachedId;
+                    }
+
+                    var fallbackStorage = new IfcObjectStorage
+                    {
+                        PropertySet = null,
+                        IfcObjects = remainingObjects,
+                        ComparisonId = string.Empty,
+                        ObjectComparisonIdCache = subsetCache
+                    };
+
+                    IfcStorageObjects.Add(fallbackStorage);
+                }
+
                 _logger.LogInformation("Successfully initialized {Count} IFC storage objects", IfcStorageObjects.Count);
 
                 await Task.CompletedTask;

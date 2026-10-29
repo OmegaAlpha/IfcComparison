@@ -2,6 +2,8 @@
   "FilePathOldIFC": "",
   "FilePathNewIFC": "",
   "FilePathIFCToQA": "",
+  "LastUsedFolderOld": "",
+  "LastUsedFolderNew": "",
   "DataGridContentIFCEntities": [
     {
       "PSetName": "QA_PSET",

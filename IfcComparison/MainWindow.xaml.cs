@@ -1,4 +1,4 @@
-﻿using IfcComparison.Converters;
+using IfcComparison.Converters;
 using IfcComparison.Logging;
 using IfcComparison.ViewModels;
 using Microsoft.Extensions.Logging;
@@ -48,6 +48,16 @@ namespace IfcComparison
 
         private void MainWindow_Unloaded(object sender, RoutedEventArgs e)
         {
+            if (DataContext is MainViewModel vm)
+            {
+                vm.AutoSaveUserSettings();
+                try
+                {
+                    vm.OldModel?.Close();
+                    vm.NewModelQA?.Close();
+                }
+                catch { }
+            }
             _logger.LogDebug("IfcComparison UserControl unloaded at {Time}", DateTime.Now);
         }
 

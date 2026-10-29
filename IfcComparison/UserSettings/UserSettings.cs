@@ -1,4 +1,4 @@
-﻿using IfcComparison.ViewModels;
+using IfcComparison.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -10,12 +10,12 @@ namespace IfcComparison
 {
     public class UserSettings : IUserSettings
     {
-        
         public string FilePathOldIFC { get; set; }
         public string FilePathNewIFC { get; set; }
         public string FilePathIFCToQA { get; set; }
-        public ObservableCollection<IfcEntity> DataGridContentIFCEntities { get; set ; }
-
+        public string LastUsedFolderOld { get; set; }
+        public string LastUsedFolderNew { get; set; }
+        public ObservableCollection<IfcEntity> DataGridContentIFCEntities { get; set; }
 
         public UserSettings()
         {
@@ -27,23 +27,9 @@ namespace IfcComparison
             FilePathOldIFC = vm.FilePathOldIFC;
             FilePathNewIFC = vm.FilePathNewIFC;
             FilePathIFCToQA = vm.FilePathIFCToQA;
+            LastUsedFolderOld = vm.LastUsedFolderOld;
+            LastUsedFolderNew = vm.LastUsedFolderNew;
             DataGridContentIFCEntities = vm.DataGridContentIFCEntities;
-
         }
-
-
-        /*
-        public string FilePathIFC { get; set; }
-        public string Discipline { get; set; }
-        public string Shortname { get; set; }
-        public string FilePathITO { get; set; }
-        public string NameITO { get; set; }
-        public string FilePathExcelReport { get; set; }
-        public string FilePathITOTemplate { get; set; }
-        public string XMLFilePath { get; set; }
-        public string InitialDir { get; set; }
-        public string ExportFolderPath { get; set; }
-        public string ExportFileName { get; set; }
-        */
     }
 }

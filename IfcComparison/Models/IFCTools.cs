@@ -101,8 +101,10 @@ namespace IfcComparison.Models
         /// <param name="model"></param>
         /// <param name="interfaceType"></param>
         /// <returns></returns>
-        private static List<T> GetModelInstancesByInvokeReflection<T>(IfcStore model, Type interfaceType)
+        public static List<T> GetModelInstancesByInvokeReflection<T>(IfcStore model, Type interfaceType)
         {
+            if (model == null || interfaceType == null)
+                return new List<T>();
 
             #region Also works, but a little more verbose
             //var instances = model.Instances;
@@ -126,10 +128,13 @@ namespace IfcComparison.Models
                 n => n.Name.Equals("OfType") &&
                 n.IsGenericMethod && n.GetParameters().Length == 0);
 
+            if (method == null)
+                return new List<T>();
+
             MethodInfo generic = method.MakeGenericMethod(interfaceType);
             var instances = (IEnumerable<T>)generic.Invoke(model.Instances, new object[] {});
 
-            return instances.ToList();
+            return instances?.ToList() ?? new List<T>();
 
         }
 
@@ -1163,30 +1168,34 @@ namespace IfcComparison.Models
             // Pass null to get every PSet, filtered only by entity type.
             var allObjectPSets = BuildObjectToPropertySetsCache(model, null, targetEntityType);
 
-            // Process each object that has at least one required PSet
-            foreach (var kvp in requiredObjectPSets)
+            // Process all entity-typed objects found across all PSets
+            foreach (var kvp in allObjectPSets)
             {
                 var obj = kvp.Key;
-                var psets = kvp.Value;
+                var allPsets = kvp.Value;
 
-                // Cache the required property sets for this object
-                propertySetsCache[obj] = psets;
+                // Cache the required property sets for this object (empty list if none)
+                if (requiredObjectPSets.TryGetValue(obj, out var reqPsets))
+                {
+                    propertySetsCache[obj] = reqPsets;
+                }
+                else
+                {
+                    propertySetsCache[obj] = new List<IIfcPropertySet>();
+                }
 
                 // Find the comparison value by searching ALL PSets on this object
                 string comparisonValue = null;
-                if (allObjectPSets.TryGetValue(obj, out var allPsets))
+                foreach (var pset in allPsets)
                 {
-                    foreach (var pset in allPsets)
-                    {
-                        var prop = pset.HasProperties
-                            .OfType<IIfcPropertySingleValue>()
-                            .FirstOrDefault(p => p.Name.ToString().Contains(comparisonOperator));
+                    var prop = pset.HasProperties
+                        .OfType<IIfcPropertySingleValue>()
+                        .FirstOrDefault(p => p.Name.ToString().Contains(comparisonOperator));
 
-                        if (prop?.NominalValue != null)
-                        {
-                            comparisonValue = prop.NominalValue.ToString();
-                            break;
-                        }
+                    if (prop?.NominalValue != null)
+                    {
+                        comparisonValue = prop.NominalValue.ToString();
+                        break;
                     }
                 }
 
@@ -1206,6 +1215,8 @@ namespace IfcComparison.Models
 
         /// <summary>
         /// PERFORMANCE: Builds a lookup of GlobalId → Object with property sets cache using forward lookups.
+        /// Includes ALL model objects of targetEntityType (or IIfcObject), ensuring objects are matched
+        /// by GlobalId even if they do not contain the property sets specified in requiredPSetNames.
         /// </summary>
         public static (Dictionary<string, IIfcObject> ObjectLookup, Dictionary<IIfcObject, List<IIfcPropertySet>> PropertySetsCache) 
             BuildGlobalIdLookupWithPropertySets(
@@ -1216,20 +1227,32 @@ namespace IfcComparison.Models
             var objectLookup = new Dictionary<string, IIfcObject>();
             var propertySetsCache = new Dictionary<IIfcObject, List<IIfcPropertySet>>();
 
-            // Use the object-to-propertysets cache builder
-            var allObjectPSets = BuildObjectToPropertySetsCache(model, requiredPSetNames, targetEntityType);
+            // 1. Get ALL instances of the target entity type from the model
+            var effectiveType = targetEntityType ?? typeof(IIfcObject);
+            var allInstances = GetModelInstancesByInvokeReflection<IIfcObject>(model, effectiveType);
 
-            foreach (var kvp in allObjectPSets)
+            foreach (var obj in allInstances)
+            {
+                if (obj == null) continue;
+                var globalId = obj.GlobalId.ToString();
+                if (!objectLookup.ContainsKey(globalId))
+                    objectLookup[globalId] = obj;
+
+                propertySetsCache[obj] = new List<IIfcPropertySet>();
+            }
+
+            // 2. Build cache of required PSets for objects that have them
+            var requiredObjectPSets = BuildObjectToPropertySetsCache(model, requiredPSetNames, targetEntityType);
+
+            foreach (var kvp in requiredObjectPSets)
             {
                 var obj = kvp.Key;
                 var psets = kvp.Value;
                 var globalId = obj.GlobalId.ToString();
 
-                // Add to GlobalId lookup
                 if (!objectLookup.ContainsKey(globalId))
                     objectLookup[globalId] = obj;
 
-                // Cache property sets for this object
                 propertySetsCache[obj] = psets;
             }
 

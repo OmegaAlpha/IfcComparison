@@ -1,4 +1,4 @@
-﻿using IfcComparison.ViewModels;
+using IfcComparison.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -13,5 +13,7 @@ namespace IfcComparison
         string FilePathOldIFC { get; set; }
         string FilePathNewIFC { get; set; }
         string FilePathIFCToQA { get; set; }
+        string LastUsedFolderOld { get; set; }
+        string LastUsedFolderNew { get; set; }
     }
 }

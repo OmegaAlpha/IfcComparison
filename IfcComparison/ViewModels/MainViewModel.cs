@@ -19,7 +19,7 @@ using Xbim.IO.Xml.BsConf;
 
 namespace IfcComparison.ViewModels
 {
-    internal class MainViewModel : NotifierBase, IUserSettings
+    public class MainViewModel : NotifierBase, IUserSettings
     {
 
         #region Properties
@@ -36,6 +36,15 @@ namespace IfcComparison.ViewModels
 
         private string mFilePathIFCToQA;
         public string FilePathIFCToQA { get => mFilePathIFCToQA; set => SetNotify(ref mFilePathIFCToQA, value); }
+
+        private string mLastUsedFolderOld;
+        public string LastUsedFolderOld { get => mLastUsedFolderOld; set => SetNotify(ref mLastUsedFolderOld, value); }
+
+        private string mLastUsedFolderNew;
+        public string LastUsedFolderNew { get => mLastUsedFolderNew; set => SetNotify(ref mLastUsedFolderNew, value); }
+
+        private string _loadedOldFilePath;
+        private string _loadedNewFilePath;
 
         private string mIsOldIFCLoaded;
         public string IsOldIFCLoaded { get => mIsOldIFCLoaded; set => SetNotify(ref mIsOldIFCLoaded, value); }
@@ -149,7 +158,6 @@ namespace IfcComparison.ViewModels
 
         public MainViewModel()
         {
-
             // TODO: Check if files is stored in OneDrive. If so, warn user of possible issues of processes taking the file lock.
 
             var compList = Enum.GetNames(typeof(ComparisonEnumeration))
@@ -177,6 +185,7 @@ namespace IfcComparison.ViewModels
 
             LoadUserSettings(@"IfcComparisonSettings\\DefaultSettings.json");
             UserSettingsPath = string.Empty;
+            AutoLoadUserSettings();
             ClearOutputText();
 
             IsOldIFCLoaded = "Not Loaded";
@@ -188,6 +197,100 @@ namespace IfcComparison.ViewModels
             Version = $"{_appName} Version: {_semanticVersion}";
 
             GetEntities();
+        }
+
+        public static string GetInitialDirectory(string lastUsedFolder, string currentFilePath)
+        {
+            if (!string.IsNullOrWhiteSpace(lastUsedFolder))
+            {
+                try
+                {
+                    if (Directory.Exists(lastUsedFolder))
+                    {
+                        return lastUsedFolder;
+                    }
+                }
+                catch { }
+            }
+
+            if (!string.IsNullOrWhiteSpace(currentFilePath))
+            {
+                try
+                {
+                    var dir = Path.GetDirectoryName(currentFilePath);
+                    if (!string.IsNullOrWhiteSpace(dir) && Directory.Exists(dir))
+                    {
+                        return dir;
+                    }
+                }
+                catch { }
+            }
+
+            return string.Empty;
+        }
+
+        public static string GetAutoSaveSettingsPath()
+        {
+            var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            var dir = Path.Combine(appData, "IfcComparison");
+            if (!Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+            return Path.Combine(dir, "UserSettings.json");
+        }
+
+        public void AutoSaveUserSettings()
+        {
+            try
+            {
+                var path = GetAutoSaveSettingsPath();
+                var settings = new UserSettings(this);
+                ReadAndWriteJson.WriteAndSerializeAtStartup(settings, path);
+            }
+            catch
+            {
+                // Non-critical background save
+            }
+        }
+
+        public void AutoLoadUserSettings()
+        {
+            try
+            {
+                var path = GetAutoSaveSettingsPath();
+                if (File.Exists(path))
+                {
+                    var settings = (UserSettings)ReadAndWriteJson.ReadAndDeserialize<UserSettings>(path);
+                    if (settings != null)
+                    {
+                        if (!string.IsNullOrWhiteSpace(settings.LastUsedFolderOld))
+                            LastUsedFolderOld = settings.LastUsedFolderOld;
+                        if (!string.IsNullOrWhiteSpace(settings.LastUsedFolderNew))
+                            LastUsedFolderNew = settings.LastUsedFolderNew;
+
+                        if (!string.IsNullOrWhiteSpace(settings.FilePathOldIFC) && File.Exists(settings.FilePathOldIFC))
+                            FilePathOldIFC = settings.FilePathOldIFC;
+                        if (!string.IsNullOrWhiteSpace(settings.FilePathNewIFC) && File.Exists(settings.FilePathNewIFC))
+                            FilePathNewIFC = settings.FilePathNewIFC;
+                        if (!string.IsNullOrWhiteSpace(settings.FilePathIFCToQA))
+                            FilePathIFCToQA = settings.FilePathIFCToQA;
+                    }
+                }
+            }
+            catch
+            {
+                // Non-critical background load
+            }
+
+            if (string.IsNullOrWhiteSpace(LastUsedFolderOld) && !string.IsNullOrWhiteSpace(FilePathOldIFC))
+            {
+                try { LastUsedFolderOld = Path.GetDirectoryName(FilePathOldIFC); } catch { }
+            }
+            if (string.IsNullOrWhiteSpace(LastUsedFolderNew) && !string.IsNullOrWhiteSpace(FilePathNewIFC))
+            {
+                try { LastUsedFolderNew = Path.GetDirectoryName(FilePathNewIFC); } catch { }
+            }
         }
 
         private void GetEntities()
@@ -209,19 +312,17 @@ namespace IfcComparison.ViewModels
                 }
                 else
                 {
-                    Stream stream;
                     SaveFileDialog saveFileDialog = new SaveFileDialog();
                     saveFileDialog.FileName = "Settings.json";
                     saveFileDialog.Filter = "Json files (*.json)|*.json";
                     if (saveFileDialog.ShowDialog() == true)
                     {
                         UserSettingsPath = saveFileDialog.FileName;
-                        stream = saveFileDialog.OpenFile();
-                        stream.Close();
                         OutputConsole += $"Setting saved at: {UserSettingsPath}" + Environment.NewLine;
                         ReadAndWriteJson.WriteAndSerializeAtStartup(new UserSettings(this), UserSettingsPath);
                     }
                 }
+                AutoSaveUserSettings();
             }
             catch (Exception e)
             {
@@ -278,6 +379,17 @@ namespace IfcComparison.ViewModels
                                 }
                             }
                         }
+
+                        if (string.IsNullOrWhiteSpace(LastUsedFolderOld) && !string.IsNullOrWhiteSpace(FilePathOldIFC))
+                        {
+                            try { LastUsedFolderOld = Path.GetDirectoryName(FilePathOldIFC); } catch { }
+                        }
+                        if (string.IsNullOrWhiteSpace(LastUsedFolderNew) && !string.IsNullOrWhiteSpace(FilePathNewIFC))
+                        {
+                            try { LastUsedFolderNew = Path.GetDirectoryName(FilePathNewIFC); } catch { }
+                        }
+                        AutoSaveUserSettings();
+
                         OutputConsole += $"Settings loaded from {UserSettingsPath}" + Environment.NewLine;
                     }
                     else
@@ -303,19 +415,29 @@ namespace IfcComparison.ViewModels
 
         private async void GetIFCByName(string commandName)
         {
-            var fileName = Common.OpenFileDialogPath("ifc", "");
             var strLoaded = "Loaded";
             var strNotLoaded = "Not Loaded";
-
-            if (string.IsNullOrEmpty(fileName))
-            {
-                return;
-            }
 
             try
             {
                 if (commandName == nameof(BrowseOldIFCFileCommand))
                 {
+                    var initialDir = GetInitialDirectory(LastUsedFolderOld, FilePathOldIFC);
+                    var fileName = Common.OpenFileDialogPath("ifc", initialDir);
+                    if (string.IsNullOrEmpty(fileName))
+                    {
+                        return;
+                    }
+
+                    LastUsedFolderOld = Path.GetDirectoryName(fileName);
+                    AutoSaveUserSettings();
+
+                    if (OldModel != null)
+                    {
+                        try { OldModel.Close(); } catch { }
+                        OldModel = null;
+                    }
+
                     IsOldIFCLoaded = strNotLoaded;
                     FilePathOldIFC = fileName;
                     OutputConsole += $"IFC file: {Path.GetFileName(FilePathOldIFC)} is loading..." + Environment.NewLine;
@@ -324,19 +446,40 @@ namespace IfcComparison.ViewModels
                     {
                         return;
                     }
+                    _loadedOldFilePath = FilePathOldIFC;
                     IsOldIFCLoaded = strLoaded;
                     OutputConsole += $"IFC file: {Path.GetFileName(FilePathOldIFC)} {strLoaded}" + Environment.NewLine;
                 }
                 else if (commandName == nameof(BrowseNewIFCFileCommand))
                 {
+                    var initialDir = GetInitialDirectory(LastUsedFolderNew, FilePathNewIFC);
+                    var fileName = Common.OpenFileDialogPath("ifc", initialDir);
+                    if (string.IsNullOrEmpty(fileName))
+                    {
+                        return;
+                    }
+
+                    LastUsedFolderNew = Path.GetDirectoryName(fileName);
+                    AutoSaveUserSettings();
+
+                    if (NewModelQA != null)
+                    {
+                        try { NewModelQA.Close(); } catch { }
+                        NewModelQA = null;
+                    }
+
                     IsNewIFCLoaded = strNotLoaded;
                     IsNewIFCQALoaded = strNotLoaded;
                     FilePathNewIFC = fileName;
                     OutputConsole += $"IFC file: {Path.GetFileName(FilePathNewIFC)} is loading..." + Environment.NewLine;
-                    if (!string.IsNullOrEmpty(fileName))
+                    FilePathIFCToQA = Path.Combine(Path.GetDirectoryName(fileName), Path.GetFileNameWithoutExtension(fileName) + "_QA" + Path.GetExtension(fileName));
+
+                    var qaDir = Path.GetDirectoryName(FilePathIFCToQA);
+                    if (!string.IsNullOrEmpty(qaDir) && !Directory.Exists(qaDir))
                     {
-                        FilePathIFCToQA = Path.Combine(Path.GetDirectoryName(fileName), Path.GetFileNameWithoutExtension(fileName) + "_QA" + Path.GetExtension(fileName));
+                        Directory.CreateDirectory(qaDir);
                     }
+
                     File.Copy(FilePathNewIFC, FilePathIFCToQA, true);
                     OutputConsole += $"IFC file: {Path.GetFileName(FilePathIFCToQA)} is loading..." + Environment.NewLine;
 
@@ -348,6 +491,7 @@ namespace IfcComparison.ViewModels
                     {
                         return;
                     }
+                    _loadedNewFilePath = FilePathNewIFC;
                     IsNewIFCQALoaded = strLoaded;
                     OutputConsole += $"IFC file: {Path.GetFileName(FilePathIFCToQA)} {strLoaded}" + Environment.NewLine;
                 }
@@ -370,13 +514,36 @@ namespace IfcComparison.ViewModels
                 return;
             }
 
+            if (OldModel != null)
+            {
+                try { OldModel.Close(); } catch { }
+                OldModel = null;
+            }
+            if (NewModelQA != null)
+            {
+                try { NewModelQA.Close(); } catch { }
+                NewModelQA = null;
+            }
+
             try
             {
+                if (string.IsNullOrEmpty(FilePathIFCToQA))
+                {
+                    FilePathIFCToQA = Path.Combine(Path.GetDirectoryName(FilePathNewIFC), Path.GetFileNameWithoutExtension(FilePathNewIFC) + "_QA" + Path.GetExtension(FilePathNewIFC));
+                }
+
+                var qaDir = Path.GetDirectoryName(FilePathIFCToQA);
+                if (!string.IsNullOrEmpty(qaDir) && !Directory.Exists(qaDir))
+                {
+                    Directory.CreateDirectory(qaDir);
+                }
+
                 File.Copy(FilePathNewIFC, FilePathIFCToQA, true);
             }
             catch (Exception e)
             {
                 MessageBox.Show(e.Message);
+                return;
             }
 
             IsOldIFCLoaded = strNotLoaded;
@@ -385,7 +552,7 @@ namespace IfcComparison.ViewModels
             IsNewIFCLoaded = strNotLoaded;
             OutputConsole += $"IFC file: {Path.GetFileName(FilePathNewIFC)} is loading..." + Environment.NewLine;
 
-            IsNewIFCLoaded = strNotLoaded;
+            IsNewIFCQALoaded = strNotLoaded;
             OutputConsole += $"IFC file: {Path.GetFileName(FilePathIFCToQA)} is loading..." + Environment.NewLine;
 
             var tasks = new List<Task<IfcStore>>();
@@ -404,6 +571,9 @@ namespace IfcComparison.ViewModels
                 return;
             }
 
+            _loadedOldFilePath = FilePathOldIFC;
+            _loadedNewFilePath = FilePathNewIFC;
+
             IsOldIFCLoaded = strLoaded;
             OutputConsole += $"IFC file: {Path.GetFileName(FilePathOldIFC)} {strLoaded}" + Environment.NewLine;
 
@@ -421,79 +591,110 @@ namespace IfcComparison.ViewModels
                 // Set busy indicator
                 IsGeneratingIFCPset = true;
 
-                if (File.Exists(FilePathOldIFC) && File.Exists(FilePathNewIFC))
+                if (string.IsNullOrEmpty(FilePathOldIFC) || !File.Exists(FilePathOldIFC))
                 {
-                    if (Directory.Exists(Path.GetDirectoryName(FilePathIFCToQA)))
-                    {
-                        if (DataGridContentIFCEntities.Count > 0)
-                        {
-                            if (IsOldIFCLoaded == "Loaded" && IsNewIFCQALoaded == "Loaded")
-                            {
-                                // Update UI on the UI thread
-                                Application.Current.Dispatcher.Invoke(() => 
-                                {
-                                    OutputConsole += "IFC Comparison running..." + Environment.NewLine;
-                                });
-
-                                var entitiesList = DataGridContentIFCEntities.ToList();
-
-                                // Create progress reporting action
-                                Action<string> reportProgress = (message) => 
-                                {
-                                    Application.Current.Dispatcher.Invoke(() => 
-                                    {
-                                        OutputConsole += message + Environment.NewLine;
-                                    });
-                                };
-
-                                // Run the heavy operation on a background thread
-                                var ifcComparerTask = await Task.Run(async () =>
-                                {
-                                    // Create the comparer
-                                    reportProgress("Creating IFC comparer...");
-                                    var comparer = await Models.IfcComparer.CreateAsync(
-                                        OldModel,
-                                        NewModelQA,
-                                        FilePathIFCToQA,
-                                        "Transaction",
-                                        entitiesList);
-                                    
-                                    // Compare revisions
-                                    reportProgress("Starting comparison of all entities...");
-                                    await comparer.CompareAllRevisions();
-                                    
-                                    return comparer;
-                                });
-
-                                // Update UI when complete
-                                Application.Current.Dispatcher.Invoke(() => 
-                                {
-                                    OutputConsole += "IFC Comparison completed and written to file." + Environment.NewLine;
-                                });
-                            }
-                            else
-                            {
-                                MessageBox.Show("Models not loaded, wait until labels change to loaded!");
-                            }
-                        }
-                        else
-                        {
-                            MessageBox.Show("No information set in the IFC Entity settings!");
-                        }
-                    }
-                    else
-                    {
-                        MessageBox.Show("QA Folder path doesn't exist!");
-                    }
+                    MessageBox.Show("Old IFC file does not exist! Please verify the path.");
+                    return;
                 }
-                else
+
+                if (string.IsNullOrEmpty(FilePathNewIFC) || !File.Exists(FilePathNewIFC))
                 {
-                    MessageBox.Show("Path to IFCs doesn't exist!");
+                    MessageBox.Show("New IFC file does not exist! Please verify the path.");
+                    return;
                 }
+
+                if (DataGridContentIFCEntities.Count == 0)
+                {
+                    MessageBox.Show("No information set in the IFC Entity settings!");
+                    return;
+                }
+
+                if (string.IsNullOrEmpty(FilePathIFCToQA))
+                {
+                    FilePathIFCToQA = Path.Combine(
+                        Path.GetDirectoryName(FilePathNewIFC),
+                        Path.GetFileNameWithoutExtension(FilePathNewIFC) + "_QA" + Path.GetExtension(FilePathNewIFC));
+                }
+
+                var qaDir = Path.GetDirectoryName(FilePathIFCToQA);
+                if (!string.IsNullOrEmpty(qaDir) && !Directory.Exists(qaDir))
+                {
+                    Directory.CreateDirectory(qaDir);
+                }
+
+                Action<string> reportProgress = (message) => 
+                {
+                    Application.Current?.Dispatcher?.Invoke(() => 
+                    {
+                        OutputConsole += message + Environment.NewLine;
+                    });
+                };
+
+                reportProgress("Starting IFC Comparison...");
+
+                // 1. Ensure any previous QA model instance is closed and unlocked before overwriting
+                if (NewModelQA != null)
+                {
+                    try { NewModelQA.Close(); } catch { }
+                    NewModelQA = null;
+                }
+
+                // 2. Always prepare a fresh copy from New IFC so that re-running comparison begins from a clean baseline
+                reportProgress($"Preparing fresh QA model from {Path.GetFileName(FilePathNewIFC)}...");
+                File.Copy(FilePathNewIFC, FilePathIFCToQA, true);
+
+                reportProgress($"Opening QA model: {Path.GetFileName(FilePathIFCToQA)}...");
+                NewModelQA = await OpenIFCModelAsync(FilePathIFCToQA);
+                if (NewModelQA == null)
+                {
+                    reportProgress("Failed to open QA model.");
+                    return;
+                }
+                _loadedNewFilePath = FilePathNewIFC;
+                IsNewIFCQALoaded = "Loaded";
+
+                // 3. Ensure OldModel is loaded and matches FilePathOldIFC
+                if (OldModel == null || _loadedOldFilePath != FilePathOldIFC)
+                {
+                    if (OldModel != null)
+                    {
+                        try { OldModel.Close(); } catch { }
+                        OldModel = null;
+                    }
+
+                    reportProgress($"Opening old IFC model: {Path.GetFileName(FilePathOldIFC)}...");
+                    OldModel = await OpenIFCModelAsync(FilePathOldIFC);
+                    if (OldModel == null)
+                    {
+                        reportProgress("Failed to open Old IFC model.");
+                        return;
+                    }
+                    _loadedOldFilePath = FilePathOldIFC;
+                    IsOldIFCLoaded = "Loaded";
+                }
+
+                var entitiesList = DataGridContentIFCEntities.ToList();
+
+                // 4. Run the heavy comparison operation on a background thread
+                await Task.Run(async () =>
+                {
+                    reportProgress("Creating IFC comparer...");
+                    var comparer = await Models.IfcComparer.CreateAsync(
+                        OldModel,
+                        NewModelQA,
+                        FilePathIFCToQA,
+                        "Transaction",
+                        entitiesList);
+                    
+                    reportProgress("Starting comparison of all entities...");
+                    await comparer.CompareAllRevisions();
+                });
+
+                reportProgress("IFC Comparison completed and written to file: " + FilePathIFCToQA);
             }
             catch (Exception ex)
             {
-                Application.Current.Dispatcher.Invoke(() => 
+                Application.Current?.Dispatcher?.Invoke(() => 
                 {
                     OutputConsole += $"Error during IFC comparison: {ex.Message}" + Environment.NewLine;
                     MessageBox.Show($"An error occurred: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -501,6 +702,15 @@ namespace IfcComparison.ViewModels
             }
             finally
             {
+                // Always close NewModelQA after saving so FilePathIFCToQA is immediately unlocked on disk
+                // and cannot pollute memory or a subsequent comparison run.
+                if (NewModelQA != null)
+                {
+                    try { NewModelQA.Close(); } catch { }
+                    NewModelQA = null;
+                }
+                IsNewIFCQALoaded = "Loaded";
+
                 // Always reset busy indicator
                 IsGeneratingIFCPset = false;
             }
