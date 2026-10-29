@@ -99,6 +99,49 @@ namespace IfcComparison.Tests
         }
 
         [Fact]
+        public void UserSettings_FromViewModel_InfersFoldersFromFilePathsWhenEmpty()
+        {
+            var vm = new MainViewModel
+            {
+                FilePathOldIFC = @"C:\Old\model.ifc",
+                FilePathNewIFC = @"C:\New\model.ifc",
+                LastUsedFolderOld = "",
+                LastUsedFolderNew = ""
+            };
+
+            var settings = new UserSettings(vm);
+
+            Assert.Equal(@"C:\Old", settings.LastUsedFolderOld);
+            Assert.Equal(@"C:\New", settings.LastUsedFolderNew);
+        }
+
+        [Fact]
+        public void MainViewModel_SettingFilePath_UpdatesLastUsedFolderIfDirectoryExists()
+        {
+            var tempDir = Path.GetTempPath().TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            var testOldPath = Path.Combine(tempDir, "old_model.ifc");
+            var testNewPath = Path.Combine(tempDir, "new_model.ifc");
+
+            var vm = new MainViewModel
+            {
+                FilePathOldIFC = testOldPath,
+                FilePathNewIFC = testNewPath
+            };
+
+            Assert.Equal(tempDir, vm.LastUsedFolderOld);
+            Assert.Equal(tempDir, vm.LastUsedFolderNew);
+        }
+
+        [Fact]
+        public void GetInitialDirectory_WithTrailingSlash_ReturnsValidDirectory()
+        {
+            var tempDir = Path.GetTempPath();
+            var result = MainViewModel.GetInitialDirectory(tempDir, "");
+
+            Assert.Equal(tempDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar), result.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+        }
+
+        [Fact]
         public async Task Comparison_RunTwiceOnSameFiles_ProducesIdenticalResults()
         {
             // Setup temporary IFC models

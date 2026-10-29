@@ -46,9 +46,9 @@
         <TextBlock Grid.Row="7" Grid.Column="4" Margin="0 0 10 0" HorizontalAlignment="Right" Text="{Binding Version}"/>
 
         <TextBox Grid.Row="0" Grid.Column="1" Margin="5, 15, 205, 15" Grid.ColumnSpan="4" Text="{Binding UserSettingsPath}" />
-        <TextBox Grid.Row="1" Grid.Column="1" Margin="5" Text="{Binding FilePathOldIFC}" />
-        <TextBox Grid.Row="2" Grid.Column="1" Margin="5" Text="{Binding FilePathNewIFC}"/>
-        <TextBox Grid.Row="3" Grid.Column="1" Margin="5" Text="{Binding FilePathIFCToQA}"/>
+        <TextBox Grid.Row="1" Grid.Column="1" Margin="5" Text="{Binding FilePathOldIFC, UpdateSourceTrigger=PropertyChanged}" />
+        <TextBox Grid.Row="2" Grid.Column="1" Margin="5" Text="{Binding FilePathNewIFC, UpdateSourceTrigger=PropertyChanged}"/>
+        <TextBox Grid.Row="3" Grid.Column="1" Margin="5" Text="{Binding FilePathIFCToQA, UpdateSourceTrigger=PropertyChanged}"/>
 
         <Button Grid.Row="0" Grid.Column="0" Margin="5, 15" Content="Save" Command="{Binding SaveUserSettingsCommand}" x:Name="SaveSettingsBtn" />
         <Button Grid.Row="0" Grid.Column="4" Margin="5, 15, 105, 15" Width="90" HorizontalAlignment="Right" Content="Browse" Command="{Binding LoadUserSettingsCommand}" x:Name="LoadSettingsBtn" />

@@ -1,10 +1,11 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using IfcComparison.CLI;
 using IfcComparison.Logging;
+using IfcComparison.ViewModels;
 using Microsoft.Extensions.Logging;
 using Xbim.Common.Configuration;
 
@@ -88,14 +89,29 @@ namespace IfcComparison
             
             // GUI mode
             base.OnStartup(e);
-            new Window
+            var mainWindow = new MainWindow();
+            var window = new Window
             {
                 Title = "IfcComparison",
-                Content = new MainWindow(),
+                Content = mainWindow,
                 Width = 1450,
                 Height = 800,
                 WindowStartupLocation = WindowStartupLocation.CenterScreen
-            }.Show();
+            };
+            window.Closing += (s, args) =>
+            {
+                if (mainWindow.DataContext is MainViewModel vm)
+                {
+                    vm.AutoSaveUserSettings();
+                    try
+                    {
+                        vm.OldModel?.Close();
+                        vm.NewModelQA?.Close();
+                    }
+                    catch { }
+                }
+            };
+            window.Show();
             logger.LogDebug("IfcComparison standalone application started at {Time}", DateTime.Now);
         }
         

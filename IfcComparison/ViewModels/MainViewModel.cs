@@ -29,10 +29,52 @@ namespace IfcComparison.ViewModels
         private string _appName = Assembly.GetExecutingAssembly().GetName().Name;
 
         private string mFilePathOldIFC;
-        public string FilePathOldIFC { get => mFilePathOldIFC; set => SetNotify(ref mFilePathOldIFC, value); }
+        public string FilePathOldIFC
+        {
+            get => mFilePathOldIFC;
+            set
+            {
+                if (SetNotify(ref mFilePathOldIFC, value))
+                {
+                    if (!string.IsNullOrWhiteSpace(value))
+                    {
+                        try
+                        {
+                            var dir = Path.GetDirectoryName(value);
+                            if (!string.IsNullOrWhiteSpace(dir) && Directory.Exists(dir))
+                            {
+                                LastUsedFolderOld = dir;
+                            }
+                        }
+                        catch { }
+                    }
+                }
+            }
+        }
 
         private string mFilePathNewIFC;
-        public string FilePathNewIFC { get => mFilePathNewIFC; set => SetNotify(ref mFilePathNewIFC, value); }
+        public string FilePathNewIFC
+        {
+            get => mFilePathNewIFC;
+            set
+            {
+                if (SetNotify(ref mFilePathNewIFC, value))
+                {
+                    if (!string.IsNullOrWhiteSpace(value))
+                    {
+                        try
+                        {
+                            var dir = Path.GetDirectoryName(value);
+                            if (!string.IsNullOrWhiteSpace(dir) && Directory.Exists(dir))
+                            {
+                                LastUsedFolderNew = dir;
+                            }
+                        }
+                        catch { }
+                    }
+                }
+            }
+        }
 
         private string mFilePathIFCToQA;
         public string FilePathIFCToQA { get => mFilePathIFCToQA; set => SetNotify(ref mFilePathIFCToQA, value); }
@@ -207,7 +249,7 @@ namespace IfcComparison.ViewModels
                 {
                     if (Directory.Exists(lastUsedFolder))
                     {
-                        return lastUsedFolder;
+                        return Path.GetFullPath(lastUsedFolder);
                     }
                 }
                 catch { }
@@ -220,7 +262,7 @@ namespace IfcComparison.ViewModels
                     var dir = Path.GetDirectoryName(currentFilePath);
                     if (!string.IsNullOrWhiteSpace(dir) && Directory.Exists(dir))
                     {
-                        return dir;
+                        return Path.GetFullPath(dir);
                     }
                 }
                 catch { }
@@ -269,9 +311,9 @@ namespace IfcComparison.ViewModels
                         if (!string.IsNullOrWhiteSpace(settings.LastUsedFolderNew))
                             LastUsedFolderNew = settings.LastUsedFolderNew;
 
-                        if (!string.IsNullOrWhiteSpace(settings.FilePathOldIFC) && File.Exists(settings.FilePathOldIFC))
+                        if (!string.IsNullOrWhiteSpace(settings.FilePathOldIFC))
                             FilePathOldIFC = settings.FilePathOldIFC;
-                        if (!string.IsNullOrWhiteSpace(settings.FilePathNewIFC) && File.Exists(settings.FilePathNewIFC))
+                        if (!string.IsNullOrWhiteSpace(settings.FilePathNewIFC))
                             FilePathNewIFC = settings.FilePathNewIFC;
                         if (!string.IsNullOrWhiteSpace(settings.FilePathIFCToQA))
                             FilePathIFCToQA = settings.FilePathIFCToQA;
@@ -388,7 +430,6 @@ namespace IfcComparison.ViewModels
                         {
                             try { LastUsedFolderNew = Path.GetDirectoryName(FilePathNewIFC); } catch { }
                         }
-                        AutoSaveUserSettings();
 
                         OutputConsole += $"Settings loaded from {UserSettingsPath}" + Environment.NewLine;
                     }
@@ -429,6 +470,7 @@ namespace IfcComparison.ViewModels
                         return;
                     }
 
+                    FilePathOldIFC = fileName;
                     LastUsedFolderOld = Path.GetDirectoryName(fileName);
                     AutoSaveUserSettings();
 
@@ -439,7 +481,6 @@ namespace IfcComparison.ViewModels
                     }
 
                     IsOldIFCLoaded = strNotLoaded;
-                    FilePathOldIFC = fileName;
                     OutputConsole += $"IFC file: {Path.GetFileName(FilePathOldIFC)} is loading..." + Environment.NewLine;
                     OldModel = await OpenIFCModelAsync(FilePathOldIFC);
                     if (OldModel == null)
@@ -459,7 +500,9 @@ namespace IfcComparison.ViewModels
                         return;
                     }
 
+                    FilePathNewIFC = fileName;
                     LastUsedFolderNew = Path.GetDirectoryName(fileName);
+                    FilePathIFCToQA = Path.Combine(Path.GetDirectoryName(fileName), Path.GetFileNameWithoutExtension(fileName) + "_QA" + Path.GetExtension(fileName));
                     AutoSaveUserSettings();
 
                     if (NewModelQA != null)
@@ -470,9 +513,7 @@ namespace IfcComparison.ViewModels
 
                     IsNewIFCLoaded = strNotLoaded;
                     IsNewIFCQALoaded = strNotLoaded;
-                    FilePathNewIFC = fileName;
                     OutputConsole += $"IFC file: {Path.GetFileName(FilePathNewIFC)} is loading..." + Environment.NewLine;
-                    FilePathIFCToQA = Path.Combine(Path.GetDirectoryName(fileName), Path.GetFileNameWithoutExtension(fileName) + "_QA" + Path.GetExtension(fileName));
 
                     var qaDir = Path.GetDirectoryName(FilePathIFCToQA);
                     if (!string.IsNullOrEmpty(qaDir) && !Directory.Exists(qaDir))

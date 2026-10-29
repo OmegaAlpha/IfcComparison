@@ -33,7 +33,18 @@ namespace IfcComparison.Utils
 
             var filePath = string.Empty;
 
-            openFileDialog.InitialDirectory = initialDir;
+            if (!string.IsNullOrWhiteSpace(initialDir))
+            {
+                try
+                {
+                    var fullDir = Path.GetFullPath(initialDir);
+                    if (Directory.Exists(fullDir))
+                    {
+                        openFileDialog.InitialDirectory = fullDir;
+                    }
+                }
+                catch { }
+            }
             openFileDialog.Filter = filter;
             openFileDialog.FilterIndex = 1;
             openFileDialog.RestoreDirectory = true;
